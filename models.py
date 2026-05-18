@@ -42,24 +42,39 @@ class Recurring_expenses(models.Model):
     ]
 
     STATUS_CHOICES = [
-        ('Active', 'Active'),
+        ('active', 'Active'),
         ('inactive', 'Inactive'),
         ('pending', 'Pending'),
         ('completed', 'Completed'),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments')
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='payments'
+    )
+
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES)
+
+    frequency = models.CharField(
+        max_length=10,
+        choices=FREQUENCY_CHOICES
+    )
+
     start_date = models.DateField()
-    end_date = models.DateField(null=True, blank=True)
+
+    end_date = models.DateField(
+        null=True,
+        blank=True
+    )
+
     description = models.TextField(blank=True)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
 
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default='active',   )
+        default='active',
+    )
 
     def __str__(self):
         return f"{self.amount} - {self.frequency} - {self.status}"

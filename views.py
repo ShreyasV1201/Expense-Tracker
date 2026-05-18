@@ -35,15 +35,24 @@ User = get_user_model()
 def register(request):
     if request.user.is_authenticated:
         return redirect('home')
+
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
+
         if form.is_valid():
             user = form.save()
             login(request, user)
             return redirect('home')
+
+        else:
+            print(form.errors)
+
     else:
         form = UserCreationForm()
-    return render(request, 'register.html', {'form': form})
+
+    return render(request, 'register.html', {
+        'form': form
+    })
 
 class MyLoginView(LoginView):
     template_name = 'login.html'
@@ -154,43 +163,8 @@ def delete_expense(request, pk):
     expense.delete()
     return redirect('add_expense')
 
-@login_required
-def income_tracker(request):
-    # you can load data here, e.g. incomes = Income.objects.filter(user=request.user)
-    return render(request, 'incomeTracker.html', {})
 
-@login_required
-def income_tracker(request):
-    # ——— 1) Handle creation of a new income entry ———
-    if request.method == 'POST':
-        form = IncomeForm(request.POST)
-        if form.is_valid():
-            inc = form.save(commit=False)
-            inc.user = request.user
-            inc.save()
-            return redirect('income_tracker')
-    else:
-        form = IncomeForm()
 
-    # ——— 2) Build & Filter the queryset on GET params ———
-    qs = Income.objects.filter(user=request.user)
-    start = request.GET.get('start_date')
-    end   = request.GET.get('end_date')
-    if start and end:
-        try:
-            start_dt = datetime.strptime(start, "%Y-%m-%d").date()
-            end_dt   = datetime.strptime(end,   "%Y-%m-%d").date()
-            qs = qs.filter(date__range=(start_dt, end_dt))
-        except ValueError:
-            # invalid date format; you could add a message here
-            pass
-
-    # ——— 3) Order and render ———
-    incomes = qs.order_by('-date')
-    return render(request, 'incomeTracker.html', {
-        'form':    form,
-        'incomes': incomes,
-    })
 @login_required
 def income_tracker(request):
     # ——— 1) CREATE on POST ———
@@ -395,6 +369,8 @@ def export_expenses(request):
     wb.save(response)
     return response
 
+
+@login_required
 def export_incomes(request):
     """
     Export Income records to an Excel file, filtered by start_date / end_date.
@@ -404,7 +380,7 @@ def export_incomes(request):
     end_date   = request.GET.get('end_date')
 
     # Build queryset
-    qs = Income.objects.all().order_by('date')
+    qs = Income.objects.filter(user=request.user).order_by('date')
     if start_date:
         qs = qs.filter(date__gte=start_date)
     if end_date:
