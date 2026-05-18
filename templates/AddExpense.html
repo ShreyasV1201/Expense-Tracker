@@ -1,0 +1,425 @@
+{% extends "base.html" %}
+
+{% block title %}Expenses{% endblock %}
+
+{% block crumb_title %}Add Expense{% endblock %}
+{% block header_title %}Add Expense{% endblock %}
+{% block extra_css %}
+  <!-- DataTables CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"
+  >
+{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card mb-4">
+      <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Expenses</h6>
+        <button type="button"
+                class="btn btn-primary rounded-0"
+                data-bs-toggle="modal"
+                data-bs-target="#addExpenseModal">
+          Add Expense
+        </button>
+      </div>
+      <div class="card-body px-4 py-3">
+        <div class="table-responsive">
+
+          <!-- FILTER & EXPORT FORM -->
+          <form method="get" class="row g-2 mb-4 align-items-end">
+            <!-- FROM DATE -->
+            <div class="col-auto">
+              <label for="start_date" class="form-label">From</label>
+              <input
+                type="date"
+                id="start_date"
+                name="start_date"
+                class="form-control"
+                value="{{ request.GET.start_date }}"
+              />
+            </div>
+
+            <!-- TO DATE -->
+            <div class="col-auto">
+              <label for="end_date" class="form-label">To</label>
+              <input
+                type="date"
+                id="end_date"
+                name="end_date"
+                class="form-control"
+                value="{{ request.GET.end_date }}"
+              />
+            </div>
+
+            <!-- FILTER BUTTON -->
+            <div class="col-auto">
+              <button type="submit" class="btn btn-primary">
+                Filter
+              </button>
+            </div>
+
+            <!-- EXPORT BUTTON -->
+            <div class="col-auto">
+              <a
+                href="{% url 'export_expenses' %}?start_date={{ request.GET.start_date }}&end_date={{ request.GET.end_date }}"
+                class="btn btn-outline-secondary"
+              >
+                Export to Excel
+              </a>
+            </div>
+          </form>
+          <!-- END FILTER & EXPORT FORM -->
+
+          <table
+            id="expenseTable"
+            class="table align-items-center mb-0 table-striped"
+            style="width:100%"
+          >
+            <thead>
+              <tr>
+                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                  Date
+                </th>
+                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                  Category
+                </th>
+                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                  Description
+                </th>
+                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                  Amount
+                </th>
+                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                  Action
+                </th>
+              </tr>
+            </thead>
+              <tbody>
+                {% for exp in expenses %}
+                  <tr>
+                    <td class="text-center">{{ exp.date }}</td>
+                    <td class="text-center">{{ exp.category }}</td>
+                    <td class="text-center">{{ exp.description|default:"—" }}</td>
+                    <td class="text-center">₹{{ exp.amount }}</td>
+                    <td class="text-center">
+                      <!-- you can wire up edit/delete later -->
+                      <button
+                      type="button"
+                      class="btn btn-sm btn-warning edit-btn"
+                      data-bs-toggle="modal"
+                      data-bs-target="#editExpenseModal"
+                      data-url="{% url 'edit_expense' exp.pk %}"
+                      data-date="{{ exp.date|date:'Y-m-d' }}"
+                      data-category="{{ exp.category|escapejs }}"
+                      data-amount="{{ exp.amount }}"
+                      data-description="{{ exp.description|default_if_none:''|escapejs }}"
+                    >
+                      Edit
+                    </button>
+                    <form
+                    method="post"
+                    action="{% url 'delete_expense' exp.pk %}"
+                    class="d-inline delete-expense-form"
+                  >
+                    {% csrf_token %}
+                    <button
+  type="button"
+  class="btn btn-sm btn-danger delete-btn"
+  data-bs-toggle="modal"
+  data-bs-target="#confirmDeleteModal"
+  data-url="{% url 'delete_expense' exp.pk %}"
+>
+  Delete
+</button>
+
+                  </form>
+                    </td>
+                  </tr>
+                {% empty %}
+              
+                {% endfor %}
+              </tbody>
+              
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ============= -->
+  <!-- Add Expense Modal -->
+  <!-- ============= -->
+  <div
+    class="modal fade"
+    id="addExpenseModal"
+    tabindex="-1"
+    aria-labelledby="addExpenseModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form method="post" action="{% url 'add_expense' %}">
+          {% csrf_token %}
+          {{ form.non_field_errors }}
+
+          <div class="modal-header border-0">
+            <h5 class="modal-title" id="addExpenseModalLabel">New Expense</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+
+          <div class="modal-body pt-0">
+            <div class="form-floating mb-3">
+              <input
+                type="date"
+                class="form-control"
+                id="id_date"
+                name="date"
+                placeholder="Date"
+                required
+              >
+              <label for="id_date">Date</label>
+              {{ form.date.errors }}
+            </div>
+
+            <div class="form-floating mb-3">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="add_category"
+                  name="category"
+                  placeholder="Category"
+                  required
+                >
+                <label for="add_category">Category</label>
+              </div>
+
+            <div class="form-floating mb-3">
+              <input
+                type="number"
+                class="form-control"
+                id="id_amount"
+                name="amount"
+                step="0.01"
+                placeholder="Amount"
+                required
+              >
+              <label for="id_amount">Amount (₹)</label>
+              {{ form.amount.errors }}
+            </div>
+
+            <div class="form-floating">
+              <textarea
+                class="form-control"
+                placeholder="Description"
+                id="id_description"
+                name="description"
+                style="height: 80px"
+              ></textarea>
+              <label for="id_description">Description (optional)</label>
+              {{ form.description.errors }}
+            </div>
+          </div>
+
+          <div class="modal-footer border-0">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              Save Expense
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Expense Modal -->
+<div
+class="modal fade"
+id="editExpenseModal"
+tabindex="-1"
+aria-labelledby="editExpenseModalLabel"
+aria-hidden="true"
+>
+<div class="modal-dialog modal-dialog-centered">
+  <div class="modal-content">
+    <form
+      method="post"
+      id="editForm"
+      action=""  {# will be set via JS #}
+    >
+      {% csrf_token %}
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="editExpenseModalLabel">Edit Expense</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body pt-0">
+        <div class="form-floating mb-3">
+          <input
+            type="date"
+            class="form-control"
+            id="edit_date"
+            name="date"
+            placeholder="Date"
+            required
+          >
+          <label for="edit_date">Date</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input
+            type="text"
+            class="form-control"
+            id="edit_category"
+            name="category"
+            placeholder="Category"
+            required
+          >
+          <label for="edit_category">Category</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input
+            type="number"
+            class="form-control"
+            id="edit_amount"
+            name="amount"
+            step="0.01"
+            placeholder="Amount"
+            required
+          >
+          <label for="edit_amount">Amount (₹)</label>
+        </div>
+        <div class="form-floating">
+          <textarea
+            class="form-control"
+            placeholder="Description"
+            id="edit_description"
+            name="description"
+            style="height: 80px"
+          ></textarea>
+          <label for="edit_description">Description (optional)</label>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+        >
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary">
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+</div>
+<!-- Delete Confirmation Modal -->
+<div
+  class="modal fade"
+  id="confirmDeleteModal"
+  tabindex="-1"
+  aria-labelledby="confirmDeleteLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title text-danger" id="confirmDeleteLabel">
+          Confirm Deletion
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to permanently delete this expense?
+      </div>
+      <div class="modal-footer border-0">
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+        >
+          Cancel
+        </button>
+
+        <!-- this form will be pointed at the right URL via JS -->
+        <form id="deleteForm" method="post" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">
+            Delete
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}
+{% block extra_js %}
+  <!-- 1) jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- 2) DataTables -->
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+  <!-- 3) Bootstrap bundle (Popper + Modal) -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+AMvyTG2RmSVXv+8abtTE1Pi6jizo"
+    crossorigin="anonymous"
+  ></script>
+
+  <!-- 4) your DataTable init & modal-populate -->
+  <script>
+    $(function() {
+      $('#expenseTable').DataTable({
+        paging:    true,
+        searching: true,
+        ordering:  true,
+        info:      false
+      });
+
+      $('#editExpenseModal').on('show.bs.modal', function(e) {
+        const btn     = $(e.relatedTarget);
+        const modal   = $(this);
+        modal.find('form#editForm').attr('action', btn.data('url'));
+        modal.find('#edit_date').val(btn.data('date'));
+        modal.find('#edit_category').val(btn.data('category'));
+        modal.find('#edit_amount').val(btn.data('amount'));
+        modal.find('#edit_description').val(btn.data('description'));
+      });
+      // intercept all delete‐forms and pop a confirm()
+      $('#confirmDeleteModal').on('show.bs.modal', function(e) {
+      const btn = $(e.relatedTarget);
+      $(this).find('form#deleteForm').attr('action', btn.data('url'));
+    });
+  });
+
+
+  </script>
+{% endblock %}

@@ -1,0 +1,88 @@
+<!-- templates/profile.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<h1 class="mb-4">My Profile</h1>
+
+<div class="card mb-5">
+  <!-- 1) Make the header a flex container, and space-between -->
+  <div class="card-header
+              d-flex justify-content-between align-items-center
+              bg-danger text-white">
+    <span>User Information</span>
+
+    <!-- 2) Blue, small button lives here now -->
+    <button type="button"
+            class="btn btn-sm btn-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#editProfileModal">
+      Edit Profile
+    </button>
+  </div>
+  <div class="card-body">
+    <p><strong>Username:</strong> {{ request.user.username|upper }}</p>
+    <p><strong>First Name:</strong> {{ profile.first_name|default:"Not Provided"|upper }}</p>
+    <p><strong>Last Name:</strong> {{ profile.last_name|default:"Not Provided"|upper }}</p>  
+    <p><strong>Mobile:</strong> {{ profile.mobile|default:"Not Provided"|upper }}</p>
+    <p><strong>Address:</strong> {{ profile.address|default:"Not Provided"|upper }}</p>
+    <p><strong>Date Joined:</strong> {{ request.user.date_joined|date:"F j, Y"|upper }}</p>
+  </div>
+  
+
+<!-- 2) The Modal Markup -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="post">
+          {% csrf_token %}
+  
+          <div class="modal-header">
+            <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+  
+          <div class="modal-body">
+            {{ form.as_p }}
+          </div>
+  
+          <div class="modal-footer">
+            <button type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button type="submit"
+                    class="btn btn-primary">
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+<!-- <div class="card">
+    <div class="card-header bg-secondary text-white">
+       Financial Summary for {{ current_month }}
+     </div>
+  <div class="card-body d-flex justify-content-around text-center">
+    <div>
+      <h5>Total Income</h5>
+      <p class="fs-4">{{ total_income }}</p>
+    </div>
+    <div>
+      <h5>Total Expenses</h5>
+      <p class="fs-4">{{ total_expenses }}</p>
+    </div>
+    <div>
+      <h5>Recurring Expenses</h5>
+      <p class="fs-4">{{ recurring_expenses }}</p>
+    </div>
+    <div>
+      <h5>Net Income</h5>
+      <p class="fs-4">{{ net_income }}</p>
+    </div>
+  </div>
+</div> -->
+{% endblock %}
